@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .error {
+            color: red;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+        .valid {
+            border-color: green;
+        }
+        .invalid {
+            border-color: red;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #captcha {
+            background-color: #f0f0f0;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Contact Us</h1>
+    <form id="contactForm">
+        <div class="form-group">
+            <label for="name">Full Name</label>
+            <input type="text" id="name" name="name" required>
+            <div id="name-error" class="error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" required>
+            <div id="email-error" class="error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" name="subject" required>
+            <div id="subject-error" class="error"></div>
+        </div>
+
+        <div class="form-group">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+            <div id="message-error" class="error"></div>
+        </div>
+
+        <div class="form-group">
+            <div id="captcha">
+                What is <span id="num1">3</span> + <span id="num2">7</span>?
+            </div>
+            <input type="text" id="captcha-input" name="captcha" required>
+            <div id="captcha-error" class="error"></div>
+        </div>
+
+        <button type="submit" id="submitBtn" disabled>Submit</button>
+    </form>
+
+    <script>
+        // Generate random CAPTCHA
+        function generateCaptcha() {
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            document.getElementById('num1').textContent = num1;
+            document.getElementById('num2').textContent = num2;
+            return num1 + num2;
+        }
+
+        let captchaAnswer = generateCaptcha();
+
+        // Validation rules
+        const validationRules = {
+            name: {
+                validate: (value) => value.trim().length >= 3,
+                message: 'Name must be at least 3 characters'
+            },
+            email: {
+                validate: (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+                message: 'Please enter a valid email address'
+            },
+            subject: {
+                validate: (value) => value.trim().length > 0,
+                message: 'Subject is required'
+            },
+            message: {
+                validate: (value) => value.trim().length >= 10,
+                message: 'Message must be at least 10 characters'
+            },
+            captcha: {
+                validate: (value) => parseInt(value) === captchaAnswer,
+                message: 'Incorrect answer'
+            }
+        };
+
+        // Real-time validation
+        const fields = ['name', 'email', 'subject', 'message', 'captcha'];
+        
+        fields.forEach(fieldName => {
+            const field = document.getElementById(fieldName === 'captcha' ? 'captcha-input' : fieldName);
+            const errorElement = document.getElementById(`${fieldName}-error`);
+            
+            field.addEventListener('input', function() {
+                validateField(fieldName, field.value);
+            });
+            
+            field.addEventListener('blur', function() {
+                if (field.value) {
+                    validateField(fieldName, field.value);
+                }
+            });
+        });
+
+        function validateField(fieldName, value) {
+            const rule = validationRules[fieldName];
+            const field = document.getElementById(fieldName === 'captcha' ? 'captcha-input' : fieldName);
+            const errorElement = document.getElementById(`${fieldName}-error`);
+            
+            if (rule.validate(value)) {
+                field.classList.remove('invalid');
+                field.classList.add('valid');
+                errorElement.style.display = 'none';
+            } else {
+                field.classList.remove('valid');
+                field.classList.add('invalid');
+                errorElement.textContent = rule.message;
+                errorElement.style.display = 'block';
+            }
+            
+            updateSubmitButton();
+        }
+
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            const allValid = fields.every(fieldName => {
+                const field = document.getElementById(fieldName === 'captcha' ? 'captcha-input' : fieldName);
+                return field.classList.contains('valid') && field.value;
+            });
+            submitBtn.disabled = !allValid;
+        }
+
+        // Form submission
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate all fields
+            let isFormValid = true;
+            fields.forEach(fieldName => {
+                const field = document.getElementById(fieldName === 'captcha' ? 'captcha-input' : fieldName);
+                if (!field.classList.contains('valid') || !field.value) {
+                    validateField(fieldName, field.value);
+                    if (!field.classList.contains('valid')) {
+                        isFormValid = false;
+                    }
+                }
+            });
+            
+            if (!isFormValid) {
+                alert('Please fix all errors before submitting.');
+                return;
+            }
+            
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            // Submit form
+            const formData = new FormData(this);
+            formData.append('num1', document.getElementById('num1').textContent);
+            formData.append('num2', document.getElementById('num2').textContent);
+            
+            fetch('php/submit.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit';
+                
+                if (data === 'success') {
+                    alert('Your message has been sent successfully!');
+                    this.reset();
+                    generateCaptcha();
+                    
+                    // Reset field states
+                    fields.forEach(fieldName => {
+                        const field = document.getElementById(fieldName === 'captcha' ? 'captcha-input' : fieldName);
+                        field.classList.remove('valid', 'invalid');
+                        document.getElementById(`${fieldName}-error`).style.display = 'none';
+                    });
+                    
+                    updateSubmitButton();
+                } else {
+                    alert(data);
+                }
+            })
+            .catch(error => {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit';
+                alert('An error occurred. Please try again.');
+                console.error('Error:', error);
+            });
+        });
+
+        // Regenerate CAPTCHA on click
+        document.getElementById('captcha').addEventListener('click', function() {
+            generateCaptcha();
+            document.getElementById('captcha-input').value = '';
+            document.getElementById('captcha-input').classList.remove('valid', 'invalid');
+            document.getElementById('captcha-error').style.display = 'none';
+            updateSubmitButton();
+        });
+    </script>
+</body>
+</html>
